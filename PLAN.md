@@ -162,10 +162,27 @@ Only after M5 passes on springs:
 
 ## Risks tracked here, not in README
 
+- **NRI + GNS may be structurally insufficient for the fabric thesis.**
+  NRI infers a *discrete* `K`-categorical edge; space is continuous.
+  GNS cares only about prediction accuracy and may learn a graph that
+  predicts well but has no geometric meaning. Mitigations, all to be
+  implemented in M2/M3:
+  - add a continuous edge-weight head `w_ij ∈ [0, ∞)` alongside the
+    discrete type head; run spectral embedding on the weighted graph
+  - geometric regularizer: encourage edge weight to align with the
+    inverse Jacobian norm of the decoder (distant things couple weakly)
+  - mandatory ablation in M5: shuffle or zero `z` at eval time and
+    verify rollout loss explodes. If it does not, the decoder ignored
+    the relation graph and any "emergence" claim is void.
+  The architecture serves the thesis, not the other way around — if
+  these mitigations are not enough we swap architectures (e.g. a
+  continuous latent graph via Gaussian edges, or a transformer with
+  sparsity-inducing attention).
 - Encoder collapses to a single relation type → fix with KL prior /
   entropy regularizer / `tau` schedule.
 - Decoder learns the dynamics without using `z` → ablation: zero out
-  `z` at eval and check rollout degrades.
+  `z` at eval and check rollout degrades. (Same test as the NRI/GNS
+  risk above, emphasized for how central it is.)
 - Spectral embedding rotates between runs → expected; Procrustes handles it.
 - Non-Euclidean true geometry (e.g. articulated bodies on a manifold)
   → distinguish via the geometry diagnostics in M5 before declaring failure.
