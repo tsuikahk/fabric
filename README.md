@@ -12,9 +12,6 @@ If this is true, a model trained only on local node features and pairwise
 *relational* observations — never on absolute positions — should still recover
 the geometry of the system as a derived quantity of its learned relation graph.
 
-The intended structural analogy is to AdS/CFT-style holography: bulk geometry
-reconstructed from boundary correlations.
-
 ## Setup
 
 We train a Neural Relational Inference (NRI) style model on multi-body
