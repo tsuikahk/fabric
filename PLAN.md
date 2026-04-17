@@ -2,9 +2,23 @@
 
 Iterative milestones. Each milestone ends with something runnable.
 
+## Stack
+
+- **Data / simulation:** JAX + Brax. Reasons: `jax.vmap` over thousands
+  of trajectories, `jax.jit` over the rollout loop, single API across
+  springs / gravity / Ant / Cheetah.
+- **Model / training:** PyTorch. NRI and GNS reference implementations
+  are PyTorch; debugging cycle is faster.
+- **Interface between the two:** flat `.npz` shards on disk. Brax never
+  imports torch and torch never imports jax. Decouples GPU memory and
+  lets data generation run on a separate machine if needed.
+
 ## M0 — Skeleton (0.5 day)
 
-- [ ] `pyproject.toml` (PyTorch path; JAX/Brax optional extra)
+- [ ] `pyproject.toml`
+  - core: `numpy`, `torch`, `pyyaml`, `tqdm`, `pytest`
+  - sim extra `[sim]`: `jax[cuda12]`, `brax`
+  - dev: `ruff`, `pytest-cov`
 - [ ] Package layout:
   ```
   fabric/
@@ -22,9 +36,18 @@ Iterative milestones. Each milestone ends with something runnable.
 
 ## M1 — Spring-system data (1–2 days)
 
-- [ ] `fabric/data/springs.py`: deterministic N-body spring simulator
-      (start in NumPy; port to Brax later if data generation is the
-      bottleneck).
+- [ ] `fabric/data/springs.py`: JAX-native N-body spring simulator.
+  - `step(state) -> state` is a pure function (semi-implicit Euler,
+    `dt = 1e-3`, output stride `dt_out = 1e-2`).
+  - `rollout = jax.jit(jax.lax.scan(step, ...))` for a single trajectory.
+  - `batched_rollout = jax.vmap(rollout)` to generate `B = 1024`
+    independent trajectories per call on one 4090.
+  - Connectivity: Erdős–Rényi `p = 0.3` per trajectory, sampled from a
+    PRNGKey so the spring topology varies across the dataset.
+  - Brax is the path for M6 (Ant / Cheetah). For springs the custom
+    JAX simulator is simpler than wrangling Brax's positional backend;
+    keep the door open by matching Brax's `(positions, velocities)`
+    state convention.
 - [ ] Per timestep emit:
   - `node_features`: `[N, F_n]` — velocity magnitude, KE, mass
     (no positions, no absolute reference frame)
@@ -33,10 +56,22 @@ Iterative milestones. Each milestone ends with something runnable.
   - `node_targets`: next-step `node_features`
   - **withheld** `positions`: `[N, D]` — saved separately, never read
     by the model
-- [ ] `fabric/data/dataset.py`: trajectory windowing, train/val/test split,
-      sharded `.npz` on disk.
-- [ ] `scripts/generate_data.py` + a `tests/test_springs_invariants.py`
-      checking energy conservation to catch silent simulator bugs.
+- [ ] `fabric/data/features.py` — the **only** module that touches
+      positions. Builds the no-position node/edge tensors and writes
+      `positions` to a separate `_withheld/` subdirectory whose loader
+      raises by default.
+- [ ] `fabric/data/dataset.py`: torch `Dataset`, trajectory windowing
+      (`T = 49`, predict `T + 1`), 70/15/15 split by whole trajectory.
+      Sharded `.npz` on disk.
+- [ ] `scripts/generate_data.py`: config-driven; default `N = 5`,
+      1000 trajectories × 100 steps. Brax / JAX runs in this script;
+      the resulting `.npz` shards are framework-neutral.
+- [ ] `tests/test_springs_invariants.py`: energy conservation to 1e-3
+      (catches silent simulator bugs).
+- [ ] `tests/test_no_position_leak.py`: scan every tensor produced by
+      `SpringsDataset` and assert correlation with the withheld
+      `positions` array is below threshold. **This is the project's
+      scientific fuse — write it before anything else in M1.**
 
 **Decision log entry needed:** exact list of node/edge features. Document
 in `configs/springs.yaml`.
@@ -114,10 +149,8 @@ Only after M5 passes on springs:
 
 ## Cross-cutting decisions to make before M2
 
-1. **Framework.** PyTorch (faster to iterate, easier debugging) vs JAX
-   (faster data + cleaner vmap over relation types). Default: PyTorch
-   for the model, NumPy for the spring simulator. Revisit only if data
-   generation is slow.
+1. **Framework split (locked).** JAX + Brax for data generation,
+   PyTorch for model and training. Interface is `.npz` on disk.
 2. **Number of relation types `K`.** Start `K = 2` for springs
    (connected / not). Sweep `K ∈ {2, 4, 8}` later.
 3. **Embedding dimension `D` for the spectral test.** Match the true
