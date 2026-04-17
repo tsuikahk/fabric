@@ -64,10 +64,12 @@ without stopping to explain.
 itself is already locked (vanilla NRI + GNS, see M2–M3); reading is
 for vocabulary and for knowing which baselines reviewers will expect.
 
-- [ ] `pyproject.toml`
-  - core: `numpy`, `torch`, `pyyaml`, `tqdm`, `pytest`
-  - sim extra `[sim]`: `jax[cuda12]`, `brax`
-  - dev: `ruff`, `pytest-cov`
+- [ ] `pyproject.toml` — split into extras to match the two-venv plan
+      in `INFRA.md`:
+  - core: `numpy`, `pyyaml`, `tqdm` (minimal, both venvs need these)
+  - `[sim]`: `jax[cuda12]`, `brax`
+  - `[train]`: `torch`, `huggingface_hub`, `tensorboard`
+  - `[dev]`: `pytest`, `pytest-cov`, `ruff`
 - [ ] Package layout:
   ```
   fabric/
