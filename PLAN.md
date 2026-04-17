@@ -60,9 +60,9 @@ without stopping to explain.
 
 ## M0 — Skeleton (0.5 day)
 
-**Prereq:** read the 5–6 papers in `SUBMISSION.md` before freezing the
-architecture. Two goals: don't reinvent, and pick baselines from the
-literature that reviewers will expect.
+**Prereq:** read the 5–6 papers in `SUBMISSION.md`. The architecture
+itself is already locked (vanilla NRI + GNS, see M2–M3); reading is
+for vocabulary and for knowing which baselines reviewers will expect.
 
 - [ ] `pyproject.toml`
   - core: `numpy`, `torch`, `pyyaml`, `tqdm`, `pytest`
@@ -91,8 +91,10 @@ literature that reviewers will expect.
   - `rollout = jax.jit(jax.lax.scan(step, ...))` for a single trajectory.
   - `batched_rollout = jax.vmap(rollout)` to generate `B = 1024`
     independent trajectories per call on one 4090.
-  - Connectivity: Erdős–Rényi `p = 0.3` per trajectory, sampled from a
-    PRNGKey so the spring topology varies across the dataset.
+  - Connectivity: Erdős–Rényi `p = 0.3` per trajectory (each possible
+    pair is independently connected by a spring with probability 0.3),
+    sampled from a PRNGKey so the spring topology varies across the
+    dataset.
   - Brax is the path for M6 (Ant / Cheetah). For springs the custom
     JAX simulator is simpler than wrangling Brax's positional backend;
     keep the door open by matching Brax's `(positions, velocities)`
@@ -135,8 +137,9 @@ literature that reviewers will expect.
       promise. **Write this before anything else in M1 — the project's
       scientific fuse.**
 
-**Decision log entry needed:** exact list of node/edge features. Document
-in `configs/springs.yaml`.
+- [ ] **Decision log:** write the exact list of node/edge features into
+      `configs/springs.yaml`. This is the authoritative definition of
+      "what the model sees" and must match what `features.py` emits.
 
 ## M2 — NRI encoder (2–3 days)
 
@@ -242,6 +245,11 @@ This is infrastructure, not a headline experiment. It lives in
 
 ## M6 — Harder systems (1+ week, conditional)
 
+**Flow control.** M5 passing on springs → proceed here. M5 failing on
+springs → go to M7 (escalation) first, re-run M5, only then consider
+M6. Do not advance to harder systems with an unresolved failure on
+springs.
+
 Only if M5 passes on springs:
 
 - [ ] Gravitational N-body (`fabric/data/gravity.py`). Run the main
@@ -270,6 +278,12 @@ code.
 **Decision rule.** Add the minimum that unblocks the next acceptance
 bar. Do not stack additions preemptively — each one makes the paper's
 ablation story harder.
+
+**Loop back to M5.** After every escalation step, re-run the main M5
+experiment on `springs_small` and check whether the bars are cleared.
+Only when M5 passes do we advance to M6. Each pass/fail attempt is a
+data point the paper's ablation section will cite — keep a short log in
+`RESULTS.md` as you go (which addition, which bar it unblocked).
 
 **Paper framing.** A failure → escalation narrative reads better than
 "we designed something complex and it worked." Reviewers trust the
