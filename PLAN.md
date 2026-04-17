@@ -2,6 +2,48 @@
 
 Iterative milestones. Each milestone ends with something runnable.
 
+## Vocabulary
+
+A one-line gloss per term so the rest of the document can use them
+without stopping to explain.
+
+- **NRI (Neural Relational Inference).** A model family (Kipf et al.
+  2018) that watches trajectories and guesses which pairs of objects
+  are interacting. We use "NRI-style encoder" to mean that kind of
+  guesser.
+- **GNS (Graph Network Simulator).** A model family (Sanchez-Gonzalez
+  et al. 2020) that predicts the next physical state by passing
+  messages along a graph. We use it as the dynamics half of the model.
+- **Gumbel-Softmax.** A trick that lets gradients flow through a step
+  where you would normally have to sample a discrete category.
+  Needed because the encoder's edge-type head is categorical.
+- **Message passing.** The computation inside a graph neural network:
+  each edge computes a vector from its two endpoints, each node sums
+  the incoming edge vectors and updates itself. Repeat a few times.
+- **Laplacian `L = D − A`.** A matrix summary of a graph. `A` is the
+  adjacency (edge weights), `D` is the diagonal of node degrees. Its
+  eigenvectors encode the shape of the graph.
+- **Spectral embedding / Laplacian Eigenmaps.** Take the first few
+  non-trivial eigenvectors of `L`; use each node's values across those
+  eigenvectors as its coordinates. If the graph was sampled from a
+  smooth manifold with heat-kernel edge weights, the coordinates
+  recover the manifold (Belkin & Niyogi 2003).
+- **Heat kernel.** Edge weight of the form `exp(−distance² / σ²)`.
+  The specific shape required for Laplacian Eigenmaps' manifold limit.
+- **Spectral gap.** A jump in the sorted eigenvalues of `L`. A large
+  gap after the `D`-th eigenvalue is evidence that the graph lives on
+  a `D`-dimensional manifold.
+- **Procrustes alignment.** Given two point clouds that may differ by
+  rotation, reflection, and scale, find the best alignment and return
+  the leftover error. Needed because spectral embedding has arbitrary
+  rotation.
+- **Rollout.** Run the model in "free" mode — feed its own predictions
+  back as input for `K` steps. Exposes compounding error that a
+  one-step MSE hides.
+- **Permutation equivariance.** Reordering the input nodes reorders
+  the output the same way but changes nothing else. A sanity property
+  for any graph model.
+
 ## Stack
 
 - **Data / simulation:**
