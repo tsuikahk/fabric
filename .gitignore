@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+dist/
+build/
+
+# Project artifacts — never committed, regenerated or pulled from HF Hub.
+# Anchored to repo root so fabric/data/ the python package is not swept up.
+/data/
+/runs/
+/checkpoints/
+_withheld/
+*.npz
+
+# OS
+.DS_Store
+Thumbs.db
