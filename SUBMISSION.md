@@ -43,25 +43,29 @@ measure that we do.
 
 ## Baselines to compare against
 
-- **NRI vanilla** (discrete edge types, no geometry test): we should
-  reproduce its trajectory-prediction numbers as a sanity check, then
-  add our emergence test to their graph.
-- **GNS with ground-truth positions**: upper bound on prediction error.
-- **Random edge graph + GNS**: lower bound, shows relation learning matters.
+- **NRI vanilla** (discrete edge types): the base architecture. This
+  *is* our model at M5, not a separate baseline.
+- **Physical-edge spectral embedding**: `exp(-α · mean_t |F_ij|)` as
+  edge weight, no learning. Informal upper bound on what the learned
+  graph could achieve. Lives as `scripts/sanity_baseline.py`.
+- **Random edge graph**: lower bound; shows relation learning matters.
 - **Ablation: shuffle z at eval time**: if rollout loss does NOT
   explode, the model ignored the relation graph — emergence claim is
   void.
 
 ## Required ablations for paper
 
-1. Shuffle-z ablation (above).
-2. `K` sweep: `K ∈ {1, 2, 4, 8}` relation types, does emergence quality track `K`?
-3. Edge-weight head on/off: does adding continuous coupling strength
-   improve Procrustes RMSE?
-4. Graph sparsity prior: KL weight sweep, does a sparser graph give a
-   cleaner spectral gap?
-5. Feature ablations: remove each node/edge feature, see which are
+Minimal set, keyed to what the vanilla M5 run produces:
+
+1. Shuffle-`z` at eval (above).
+2. `K` sweep: `K ∈ {1, 2, 4, 8}`. Does emergence quality track `K`?
+3. KL-weight sweep: does a sparser graph give a cleaner spectral gap?
+4. Feature ablations: remove each node/edge feature, see which are
    necessary for emergence.
+
+If M7 escalation is triggered, each escalation step adds one more
+ablation (continuous edge-weight head on/off, heat-kernel regularizer
+on/off). These only appear in the paper if the vanilla run needed them.
 
 ## Open questions for the paper
 
